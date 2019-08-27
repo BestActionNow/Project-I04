@@ -25,6 +25,10 @@ def one_hot_representation(sample, fields_dict, isample):
         index.append([isample,ind])
     return index
 
+def read_data(path):
+    data = pd.read_csv(path,header=None,encoding='utf-8',delim_whitespace=True,
+                         names = ["uid", "user_city", "item_id", "author_id", "item_city", "channel", "finish", "like", "music_id", "device", "time", "duration_time"])
+    return data
 
 def train_sparse_data_generate(train_data, fields_dict):
     sparse_data = []
