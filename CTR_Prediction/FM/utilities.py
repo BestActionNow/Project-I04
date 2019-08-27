@@ -3,6 +3,8 @@ import pandas as pd
 import pickle
 import logging
 from scipy.sparse import coo_matrix
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+from sklearn import cross_validation, metrics
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',level=logging.INFO)
 
 
@@ -75,6 +77,39 @@ def test_sparse_data_generate(test_data, fields_dict):
     with open('../avazu_CTR/test_sparse_data_frac_0.01.pkl','wb') as f:
         pickle.dump(sparse_data, f)
 
+def read_preprocess(path):
+    data = pd.read_csv('./data/bytecamp.data', sep=',', header=0)
+    sparse_features = ['uid', 'u_region_id', 'item_id', 'author_id', 'music_id', 'g_region_id']
+    dense_features = ['duration']
+
+    data[sparse_features] = data[sparse_features].fillna('-1', )
+    data[dense_features] = data[dense_features].fillna(0, )
+
+    target = ['finish', 'like']
+
+    for feat in sparse_features:
+        lbe = LabelEncoder()
+        data[feat] = lbe.fit_transform(data[feat])    
+    mmx = MinMaxScaler(feature_range=(0, 1))
+    data[dense_features] = mms.fit_transform(data[dense_features])
+
+    sparse_feature_list = [SingleFeat(feat, data[feat].nunique())
+                           for feat in sparse_features]
+    dense_feature_list = [SingleFeat(feat, 0)
+                          for feat in dense_features]
+
+    train = data[data['date'] <= 20190707]
+    test = data[data['date'] == 20190708]
+
+    train_model_input = [train[feat.name].values for feat in sparse_feature_list] + \
+                        [train[feat.name].values for feat in dense_feature_list]
+    test_model_input = [test[feat.name].values for feat in sparse_feature_list] + \
+                       [test[feat.name].values for feat in dense_feature_list]
+
+    train_labels = [train[target[0]].values, train[target[1]].values]
+    test_labels = [test[target[0]].values, test[target[1]].values]
+    
+    return train_model_input, train_labels, test_model_input, test_labels
 
 # generate batch indexes
 if __name__ == '__main__':
