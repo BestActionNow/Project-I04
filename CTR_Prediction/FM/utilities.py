@@ -28,6 +28,10 @@ def one_hot_representation(sample, fields_dict, isample):
         index.append([isample,ind])
     return index
 
+def read_data(path):
+    data = pd.read_csv(path,header=None,encoding='utf-8',delim_whitespace=True,
+                         names = ["uid", "user_city", "item_id", "author_id", "item_city", "channel", "finish", "like", "music_id", "device", "time", "duration_time"])
+    return data
 
 def train_sparse_data_generate(train_data, fields_dict):
     sparse_data = []
@@ -119,10 +123,21 @@ def read_preprocess():
     
     return np.array(train_model_input).T, np.array(train_labels).T, np.array(test_model_input).T, np.array(test_labels).T
 
+def read_sparse_dataset():
+    """
+        return four sparse matrixes for train and test
+    """
+    root_path = "/Users/bytedance/Documents/Project-I04/data/"
+    file_list = ["train_model_input", "test_model_input","train_labels", "test_labels"]
+    sparse_matrixes = []
+    for f in file_list:
+        sparse_matrixes.append(np.load(root_path+ f +".npy", allow_pickle = True))
+    return sparse_matrixes
+
 # generate batch indexes
 if __name__ == '__main__':
 
-    train_features, train_labels, test_features, test_labels = read_preprocess()
+    train_features, test_features, train_labels, test_labels = read_sparse_dataset()
     print("Data Loaded! train_features: " , train_features.shape,
           " train_labels: " , train_labels.shape,
           " test_features: " , test_features.shape,
