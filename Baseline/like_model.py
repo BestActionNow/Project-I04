@@ -4,7 +4,6 @@ from deepctr.inputs import input_from_feature_columns, get_linear_logit,build_in
 from deepctr.layers.core import DNN, PredictionLayer
 from deepctr.layers.interaction import CIN
 from deepctr.layers.utils import concat_fun
-import numpy as np
 
 
 def xDeepFM_MTL(linear_feature_columns, dnn_feature_columns, embedding_size=8, dnn_hidden_units=(256, 256), cin_layer_size=(256, 256,),
@@ -34,27 +33,18 @@ def xDeepFM_MTL(linear_feature_columns, dnn_feature_columns, embedding_size=8, d
                        cin_split_half, 0, seed)(fm_input)
         exFM_logit = tf.keras.layers.Dense(1, activation=None, )(exFM_out)
 
-    # dnn_input = combined_dnn_input(sparse_embedding_list, dense_value_list)
-    dnn_input = tf.keras.layers.Flatten()(fm_input)
+    dnn_input = combined_dnn_input(sparse_embedding_list, dense_value_list)
+
     deep_out = DNN(dnn_hidden_units, dnn_activation, l2_reg_dnn, dnn_dropout,
                    dnn_use_bn, seed)(dnn_input)
-
-    finish_out = DNN(task_net_size)(deep_out)
-    finish_logit = tf.keras.layers.Dense(
-        1, use_bias=False, activation=None)(finish_out)
 
     like_out = DNN(task_net_size)(deep_out)
     like_logit = tf.keras.layers.Dense(
         1, use_bias=False, activation=None)(like_out)
 
-    finish_logit = tf.keras.layers.add(
-        [linear_logit, finish_logit, exFM_logit])
     like_logit = tf.keras.layers.add(
         [linear_logit, like_logit, exFM_logit])
 
-    output_finish = PredictionLayer('binary', name='finish')(finish_logit)
     output_like = PredictionLayer('binary', name='like')(like_logit)
-
-    model = tf.keras.models.Model(inputs=inputs_list, outputs=[
-                                  output_finish, output_like])
+    model = tf.keras.models.Model(inputs=inputs_list, outputs=output_like)
     return model
