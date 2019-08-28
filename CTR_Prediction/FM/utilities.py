@@ -123,10 +123,21 @@ def read_preprocess():
     
     return np.array(train_model_input).T, np.array(train_labels).T, np.array(test_model_input).T, np.array(test_labels).T
 
+def read_sparse_dataset():
+    """
+        return four sparse matrixes for train and test
+    """
+    root_path = "/Users/bytedance/Documents/Project-I04/data/"
+    file_list = ["train_model_input", "test_model_input","train_labels", "test_labels"]
+    sparse_matrixes = []
+    for f in file_list:
+        sparse_matrixes.append(np.load(root_path+ f +".npy", allow_pickle = True))
+    return sparse_matrixes
+
 # generate batch indexes
 if __name__ == '__main__':
 
-    train_features, train_labels, test_features, test_labels = read_preprocess()
+    train_features, test_features, train_labels, test_labels = read_sparse_dataset()
     print("Data Loaded! train_features: " , train_features.shape,
           " train_labels: " , train_labels.shape,
           " test_features: " , test_features.shape,

@@ -1,9 +1,10 @@
 import sys
+import os
 curPath = os.path.abspath(os.path.dirname(__file__))
 rootPath = os.path.split(curPath)[0]
 sys.path.append(rootPath)
 import tensorflow as tf
-from FM.utilities import *
+from utilities import *
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s',level=logging.INFO)
 import numpy as np
@@ -99,33 +100,34 @@ def check_restore_parameters(sess, saver):
     else:
         logging.info("Initializing fresh parameters for the my Factorization Machine")
 
-def train_model(sess, model, epochs=10, print_every=50):
+def train_model(sess, model, batchsize = 512, epochs=10, print_every=50):
     """training model"""
     # Merge all the summaries and write them out to train_logs
     merged = tf.summary.merge_all()
     train_writer = tf.summary.FileWriter('train_logs', sess.graph)
     # get sparse training data
-    with open('../avazu_CTR/train_sparse_data_frac_0.01.pkl', 'rb') as f:
-        sparse_data_fraction = pickle.load(f)
+    train_features, test_features, train_labels, test_labels = read_sparse_dataset()
     # get number of batches
-    num_batches = len(sparse_data_fraction)
+    num_batches = len(train_labels) // batchsize + 1
 
     for e in range(epochs):
         num_samples = 0
         losses = []
         for ibatch in range(num_batches):
-            # batch_size data
-            batch_y = sparse_data_fraction[ibatch]['labels']
+            start = ibatch * batchsize
+            end = min(start + batchsize, len(train_labels)) 
+            batch_y = train_labels[start:end, 0]
             batch_y = np.array(batch_y)
             actual_batch_size = len(batch_y)
-            batch_indexes = np.array(sparse_data_fraction[ibatch]['indexes'], dtype=np.int64)
-            batch_shape = np.array([actual_batch_size, feature_length], dtype=np.int64)
-            batch_values = np.ones(len(batch_indexes), dtype=np.float32)
+            coo = train_features.tolist()[start:end].tocoo()
+            indices = np.mat([coo.row, coo.col]).transpose()
+            # batch_indexes = np.array(sparse_data_fraction[ibatch]['indexes'], dtype=np.int64)
+            # batch_shape = np.array([actual_batch_size, feature_length], dtype=np.int64)
+            # batch_values = np.ones(len(batch_indexes), dtype=np.float32)
             # create a feed dictionary for this batch
-            feed_dict = {model.X: (batch_indexes, batch_values, batch_shape),
+            feed_dict = {model.X: (indices, coo.data, coo.shape),
                          model.y: batch_y,
                          model.keep_prob:1.0}
-
 
             loss, accuracy,  summary, global_step, _ = sess.run([model.loss, model.accuracy,
                                                                  merged,model.global_step,
@@ -184,19 +186,19 @@ if __name__ == '__main__':
     parser.add_argument('--mode', help='train or test', type=str)
     args = parser.parse_args()
     mode = args.mode
-    # original fields
-    fields = ['hour', 'C1', 'C14', 'C15', 'C16', 'C17', 'C18', 'C19', 'C20', 'C21',
-                    'banner_pos', 'site_id' ,'site_domain', 'site_category', 'app_domain',
-                    'app_id', 'app_category', 'device_model', 'device_type', 'device_id',
-                    'device_conn_type','click']
-    # loading dicts
-    fields_dict = {}
-    for field in fields:
-        with open('dicts/'+field+'.pkl','rb') as f:
-            fields_dict[field] = pickle.load(f)
-    # length of representation
-    train_array_length = max(fields_dict['click'].values()) + 1
-    test_array_length = train_array_length - 2
+    # # original fields
+    # fields = ['hour', 'C1', 'C14', 'C15', 'C16', 'C17', 'C18', 'C19', 'C20', 'C21',
+    #                 'banner_pos', 'site_id' ,'site_domain', 'site_category', 'app_domain',
+    #                 'app_id', 'app_category', 'device_model', 'device_type', 'device_id',
+    #                 'device_conn_type','click']
+    # # loading dicts
+    # fields_dict = {}
+    # for field in fields:
+    #     with open('dicts/'+field+'.pkl','rb') as f:
+    #         fields_dict[field] = pickle.load(f)
+    # # length of representation
+    # train_array_length = max(fields_dict['click'].values()) + 1
+    # test_array_length = train_array_length - 2
     # initialize the model
     config = {}
     config['lr'] = 0.01
@@ -205,7 +207,8 @@ if __name__ == '__main__':
     config['reg_l2'] = 0
     config['k'] = 40
     # get feature length
-    feature_length = test_array_length
+    x = np.load("/Users/bytedance/Documents/Project-I04/data/train_model_input.npy", allow_pickle=True)
+    feature_length = x.tolist().shape[1] 
     # initialize FM model
     model = FM(config)
     # build graph for model
@@ -220,7 +223,7 @@ if __name__ == '__main__':
         check_restore_parameters(sess, saver)
         if mode == 'train':
             print('start training...')
-            train_model(sess, model, epochs=20, print_every=500)
+            train_model(sess, model, batchsize=512, epochs=20, print_every=500)
         if mode == 'test':
             print('start testing...')
             test_model(sess, model)
