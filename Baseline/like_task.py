@@ -4,6 +4,7 @@ import time, datetime
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from sklearn import metrics
 from like_model import xDeepFM_MTL
+#from deepctr.models import xDeepFM
 import keras
 from deepctr.inputs import  SparseFeat, DenseFeat,get_fixlen_feature_names
 
@@ -90,9 +91,9 @@ if __name__ == "__main__":
     # result = test_data[['uid', 'item_id', 'finish', 'like']].copy()
     # result.rename(columns={'finish': 'finish_probability',
     #                        'like': 'like_probability'}, inplace=True)
-    test['finish_probability'] = pred_ans
+    test['like_probability'] = pred_ans
 
-    test_finish_auc = metrics.roc_auc_score(test['finish'], test['finish_probability'])
+    test_finish_auc = metrics.roc_auc_score(test['like'], test['like_probability'])
     print('the auc of test like')
     print(test_finish_auc)
 
@@ -104,8 +105,8 @@ if __name__ == "__main__":
     # result = test_data[['uid', 'item_id', 'finish', 'like']].copy()
     # result.rename(columns={'finish': 'finish_probability',
     #                        'like': 'like_probability'}, inplace=True)
-    train['finish_probability'] = pred_ans
+    train['like_probability'] = pred_ans
 
-    train_finish_auc = metrics.roc_auc_score(train['finish'], train['finish_probability'])
+    train_finish_auc = metrics.roc_auc_score(train['like'], train['like_probability'])
     print('the auc of train like')
     print(train_finish_auc)

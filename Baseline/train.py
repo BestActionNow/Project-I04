@@ -9,7 +9,7 @@ from deepctr.inputs import  SparseFeat, DenseFeat,get_fixlen_feature_names
 import os
 os.environ["CUDA_VISIBLE_DEVICES"]='6'
 
-loss_weights = [0.7, 0.3, ]  # [0.7,0.3]任务权重可以调下试试
+loss_weights = [1.0, 1.0, ]  # [0.7,0.3]任务权重可以调下试试
 VALIDATION_FRAC = 0.2  # 用做线下验证数据比例
 
 def change_time(timeStamp):
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     print(train_labels)
 
     history = model.fit(train_model_input, train_labels,
-                        batch_size=4096, epochs=2, verbose=1, validation_split=0.1)
+                        batch_size=4096, epochs=2, verbose=1)
     pred_ans = model.predict(test_model_input, batch_size=2 ** 10)
 
     # test_auc = metrics.roc_auc_score(test[], prodict_prob_y)
